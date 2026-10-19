@@ -14,7 +14,7 @@
 
 ## 2. 当前状态（2026-10-20）
 
-- S0-01、S0-02、S0-03 仍为 `review`，尚未标记 `done`。S0-04 模型工厂与聊天 Prompt 已写入，状态 `review`；其余开发任务仍为 `todo`。Git 尚无提交。
+- S0-01、S0-02、S0-03、S0-04 仍为 `review`，尚未标记 `done`。S0-05 最小图已写入，状态 `review`；其余开发任务仍为 `todo`。仓库已有覆盖到 S0-04 的基线提交；本任务未创建新提交。
 - D-01 至 D-03 已由开发者确认，状态 `done`。
 - 环境实测：Python 3.10.21；langchain-core 1.6.12、langgraph 1.2.11、langchain-openai 1.6.2、pytest 9.1.1、pytest-asyncio 1.4.0、ruff、mypy 已安装；`pip check` 无冲突。
 - 已知缺口：S6-05 需要 `langgraph-checkpoint-postgres` 与 psycopg v3（未安装，届时申请）；S4-06 与所有 `live` 测试需要模型、Embedding、重排服务的配置（尚未提供）。
@@ -143,7 +143,7 @@ V0.2 → S6-01 → S6-02 → S6-03 → S6-04 → S6-05 ；S6-01 → S7-01 → S7
 
 ### S0-05 LangGraph 最小图
 
-- **优先级 / 状态：** P0 / todo
+- **优先级 / 状态：** P0 / review
 - **学习目标：** 理解 `StateGraph`、`TypedDict` State、节点返回部分更新、`START` / `END`、`context_schema` 与 `Runtime` 注入、`ainvoke`。
 - **要解决的问题：** `ask` 必须从 S0 起由 LangGraph 执行（SPEC 决策 13）。
 - **前置任务：** S0-04。
@@ -156,7 +156,7 @@ V0.2 → S6-01 → S6-02 → S6-03 → S6-04 → S6-05 ；S6-01 → S7-01 → S7
 - **验收标准：** 测试通过；节点内部不读取全局单例；回归检查通过。
 - **覆盖场景：** A-S0-5。
 - **测试命令：** `& $py -m pytest tests/unit/test_chat_node.py tests/graph/test_chat_graph.py`，再运行全部检查。
-- **实际结果：** 未执行。
+- **实际结果：** 2026-10-20，解释器 `C:\Users\11091\.conda\envs\medical-agent\python.exe`。红灯：测试已写、尚无 `src/minirag/graph/` 时，`pytest tests/unit/test_chat_node.py tests/graph/test_chat_graph.py -q` 在收集阶段报 `ModuleNotFoundError: No module named 'minirag.graph'`（外层为 `ImportError`），2 errors，退出码 2。断言未执行。实现后、格式化前：该命令 12 passed in 4.00s，退出码 0；默认 `pytest` 60 passed in 7.16s，退出码 0。`ruff check .` 通过。`mypy src` 为 12 source files、no issues，退出码 0。`ruff format --check .` 因 `tests/unit/test_chat_node.py` 一处调用可收成一行而失败，1 file would be reformatted，退出码 1。只格式化了该测试文件。格式化后：目标测试 12 passed in 4.37s，退出码 0；`pytest -m live` 60 deselected in 4.08s，退出码 5；`pytest -m integration` 60 deselected in 4.00s，退出码 5；均无未知标记错误。`ruff check .` 通过。`ruff format --check .` 为 26 files already formatted，退出码 0。`mypy src` 仍为 12 source files、no issues。未安装新包。未调用真实模型，未实现 `aask`、错误映射或 Checkpointer。未把 S0-01 至 S0-04 标为 `done`。学习文档写入后再跑：目标测试 12 passed in 4.02s；默认 pytest 60 passed in 5.87s；`-m live` 60 deselected in 4.27s、退出码 5；`-m integration` 60 deselected in 4.06s、退出码 5；`ruff check .` 通过；`ruff format --check .` 为 27 files already formatted（含 Markdown）；`mypy src` 仍为 12 source files、no issues。详见学习文档。
 - **学习文档：** `docs/learning/S0-05-minimal-graph.md`
 - **完成后应能：** 画出 S0 图并说明 State 每一步的变化；解释 State 与 Context 的区别；独立增加一个节点。
 - **面试知识点：** LangGraph 与直接调用 LLM、LCEL 链的区别；Reducer 的作用；为什么依赖不放进 State。
@@ -318,7 +318,7 @@ V0.2 → S6-01 → S6-02 → S6-03 → S6-04 → S6-05 ；S6-01 → S7-01 → S7
 
 ## 9. 当前建议开始的任务
 
-**S0-04 处于 `review`。** 开发者复盘确认前，不开始 S0-05，也不把 S0-04 标为 `done`。S0-01、S0-02 与 S0-03 仍保持 `review`。Git 提交仍由开发者自行决定。
+**S0-05 处于 `review`。** 开发者复盘确认前，不开始 S0-06，也不把 S0-05 标为 `done`。S0-01 至 S0-04 仍保持 `review`。Git 提交仍由开发者自行决定。
 
 ## 10. 完成记录
 
@@ -331,3 +331,4 @@ V0.2 → S6-01 → S6-02 → S6-03 → S6-04 → S6-05 ；S6-01 → S7-01 → S7
 | 2026-10-20 | S0-02 | 进入 `review`。红灯为收集阶段 `ModuleNotFoundError: No module named 'minirag.contracts'`（退出码 2）。实现后 `tests/unit/test_contracts.py` 13 passed；默认 pytest 14 passed；Ruff 与 `mypy src` 通过。未定义 `IngestReport`。S0-01 未改成 `done` |
 | 2026-10-20 | S0-03 | 进入 `review`。红灯为收集阶段 `ModuleNotFoundError: No module named 'minirag.config'`（退出码 2）。补上 `hide_input_in_errors` 后 `tests/unit/test_config.py` 20 passed；默认 pytest 34 passed；`-m live` 与 `-m integration` 各 34 deselected、退出码 5；Ruff 与 `mypy src` 通过。未安装新包。S0-01、S0-02 未改成 `done` |
 | 2026-10-20 | S0-04 | 进入 `review`。红灯为收集阶段 `ModuleNotFoundError: No module named 'minirag.llm'`（退出码 2，2 errors）。实现后目标测试 14 passed；默认 pytest 48 passed；`-m live` 与 `-m integration` 各 48 deselected、退出码 5；Ruff 与 `mypy src` 通过。未安装新包，未调用模型。S0-01、S0-02、S0-03 未改成 `done` |
+| 2026-10-20 | S0-05 | 进入 `review`。红灯为收集阶段 `ModuleNotFoundError: No module named 'minirag.graph'`（退出码 2，2 errors）。实现后目标测试 12 passed；格式化前默认 pytest 60 passed。格式化测试文件后：`-m live` 与 `-m integration` 各 60 deselected、退出码 5；Ruff 与 `mypy src`（12 source files）通过。未安装新包，未调用真实模型。S0-01 至 S0-04 未改成 `done` |

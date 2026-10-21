@@ -14,7 +14,7 @@
 
 ## 2. 当前状态（2026-10-20）
 
-- S0-01、S0-02、S0-03、S0-04 仍为 `review`，尚未标记 `done`。S0-05 最小图已写入，状态 `review`；其余开发任务仍为 `todo`。仓库已有覆盖到 S0-04 的基线提交；本任务未创建新提交。
+- S0-01 至 S0-05 仍为 `review`，尚未标记 `done`。S0-06 入口与日志关联已写入，状态 `review`；其余开发任务仍为 `todo`。仓库已有覆盖到 S0-04 的基线提交；本任务未创建新提交。
 - D-01 至 D-03 已由开发者确认，状态 `done`。
 - 环境实测：Python 3.10.21；langchain-core 1.6.12、langgraph 1.2.11、langchain-openai 1.6.2、pytest 9.1.1、pytest-asyncio 1.4.0、ruff、mypy 已安装；`pip check` 无冲突。
 - 已知缺口：S6-05 需要 `langgraph-checkpoint-postgres` 与 psycopg v3（未安装，届时申请）；S4-06 与所有 `live` 测试需要模型、Embedding、重排服务的配置（尚未提供）。
@@ -163,7 +163,7 @@ V0.2 → S6-01 → S6-02 → S6-03 → S6-04 → S6-05 ；S6-01 → S7-01 → S7
 
 ### S0-06 `aask` / `ask` 入口与日志关联
 
-- **优先级 / 状态：** P0 / todo
+- **优先级 / 状态：** P0 / review
 - **学习目标：** 异步入口与同步包装（`asyncio.run`）；`contextvars` 传递 `request_id`；从最终 State 组装响应。
 - **要解决的问题：** 需要统一入口生成标识、计时、调用图并返回 `AskResponse`。
 - **前置任务：** S0-05。
@@ -178,7 +178,7 @@ V0.2 → S6-01 → S6-02 → S6-03 → S6-04 → S6-05 ；S6-01 → S7-01 → S7
 - **验收标准：** 测试通过；回归检查通过。
 - **覆盖场景：** A-S0-1、A-S0-4。
 - **测试命令：** `& $py -m pytest tests/graph/test_service_ask.py`，再运行全部检查。
-- **实际结果：** 未执行。
+- **实际结果：** 2026-10-20，解释器 `C:\Users\11091\.conda\envs\medical-agent\python.exe`。红灯：测试已写、尚无 `logging_setup.py` 与 `service.py` 时，`pytest tests/graph/test_service_ask.py -q` 在收集阶段报 `ModuleNotFoundError: No module named 'minirag.logging_setup'`（外层为 `ImportError`），1 error in 0.84s，退出码 2。断言未执行。第一次实现后目标测试 12 passed, 1 warning in 3.63s，退出码 0；警告是已有事件循环中 `aask` 协程未被等待。`ask` 改为先检查循环后，目标测试 12 passed in 4.36s，退出码 0，无该警告。随后 `ruff check .` 因两处 B010（`setattr` 写固定属性）失败；`mypy src` 因把 `ainvoke` 返回值赋给 `AgentState` 失败，1 error、14 source files。改为直接赋值并 `cast` 后、文档写入前：目标测试 12 passed in 3.75s，退出码 0；默认 `pytest` 72 passed in 5.38s，退出码 0；`pytest -m live` 72 deselected in 3.52s，退出码 5；`pytest -m integration` 72 deselected in 3.50s，退出码 5；均无未知标记错误。`ruff check .` 通过。`ruff format --check .` 为 30 files already formatted，退出码 0。`mypy src` 为 14 source files、no issues，退出码 0。未安装新包。未调用真实模型。未实现错误映射、CLI 或 Checkpointer。未把 S0-01 至 S0-05 标为 `done`。学习文档写入后再跑：目标测试 12 passed in 3.45s；默认 pytest 72 passed in 5.01s；`-m live` 72 deselected in 3.46s、退出码 5；`-m integration` 72 deselected in 3.32s、退出码 5；`ruff check .` 通过；`ruff format --check .` 为 31 files already formatted；`mypy src` 仍为 14 source files、no issues。详见学习文档第 17 节。
 - **学习文档：** `docs/learning/S0-06-ask-entry.md`
 - **完成后应能：** 解释 `asyncio.run` 为什么不能在已运行的事件循环中调用；解释 `contextvars` 为何适合异步日志关联。
 - **面试知识点：** 协程与事件循环；同步/异步入口设计；请求 ID 在排查问题中的作用。
@@ -318,7 +318,7 @@ V0.2 → S6-01 → S6-02 → S6-03 → S6-04 → S6-05 ；S6-01 → S7-01 → S7
 
 ## 9. 当前建议开始的任务
 
-**S0-05 处于 `review`。** 开发者复盘确认前，不开始 S0-06，也不把 S0-05 标为 `done`。S0-01 至 S0-04 仍保持 `review`。Git 提交仍由开发者自行决定。
+**S0-06 处于 `review`。** 开发者复盘确认前，不开始 S0-07，也不把 S0-06 标为 `done`。S0-01 至 S0-05 仍保持 `review`。Git 提交仍由开发者自行决定。
 
 ## 10. 完成记录
 
@@ -332,3 +332,4 @@ V0.2 → S6-01 → S6-02 → S6-03 → S6-04 → S6-05 ；S6-01 → S7-01 → S7
 | 2026-10-20 | S0-03 | 进入 `review`。红灯为收集阶段 `ModuleNotFoundError: No module named 'minirag.config'`（退出码 2）。补上 `hide_input_in_errors` 后 `tests/unit/test_config.py` 20 passed；默认 pytest 34 passed；`-m live` 与 `-m integration` 各 34 deselected、退出码 5；Ruff 与 `mypy src` 通过。未安装新包。S0-01、S0-02 未改成 `done` |
 | 2026-10-20 | S0-04 | 进入 `review`。红灯为收集阶段 `ModuleNotFoundError: No module named 'minirag.llm'`（退出码 2，2 errors）。实现后目标测试 14 passed；默认 pytest 48 passed；`-m live` 与 `-m integration` 各 48 deselected、退出码 5；Ruff 与 `mypy src` 通过。未安装新包，未调用模型。S0-01、S0-02、S0-03 未改成 `done` |
 | 2026-10-20 | S0-05 | 进入 `review`。红灯为收集阶段 `ModuleNotFoundError: No module named 'minirag.graph'`（退出码 2，2 errors）。实现后目标测试 12 passed；格式化前默认 pytest 60 passed。格式化测试文件后：`-m live` 与 `-m integration` 各 60 deselected、退出码 5；Ruff 与 `mypy src`（12 source files）通过。未安装新包，未调用真实模型。S0-01 至 S0-04 未改成 `done` |
+| 2026-10-20 | S0-06 | 进入 `review`。红灯为收集阶段 `ModuleNotFoundError: No module named 'minirag.logging_setup'`（退出码 2，1 error）。实现后目标测试 12 passed；默认 pytest 72 passed。`-m live` 与 `-m integration` 各 72 deselected、退出码 5；Ruff 与 `mypy src`（14 source files）通过。未安装新包，未调用真实模型。S0-01 至 S0-05 未改成 `done` |

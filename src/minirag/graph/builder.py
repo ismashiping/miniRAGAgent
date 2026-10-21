@@ -21,6 +21,7 @@ def build_graph() -> CompiledStateGraph[AgentState, AppContext, AgentState, Agen
         已编译的图。调用 ``ainvoke(state, context=AppContext(...))`` 执行。
         没有参数。模型、配置和问题都不在这里决定。
     """
+    # 以 AgentState 作为整体状态、输入状态和输出状态
     graph: StateGraph[AgentState, AppContext, AgentState, AgentState] = StateGraph(
         AgentState,
         context_schema=AppContext,

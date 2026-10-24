@@ -32,7 +32,7 @@ _ENV_NAMES = (
 
 
 class RaisingChatModel(BaseChatModel):
-    """调用时抛出超时，用来确认入口不把模型异常收成响应。"""
+    """调用时抛出内置 ``TimeoutError``。它不是 openai SDK 的超时类型。"""
 
     def _generate(
         self,
@@ -321,25 +321,30 @@ async def test_ask_cannot_run_inside_running_loop(
     assert model.i == 0
 
 
-def test_model_timeout_propagates_and_clears_request_id(
+def test_builtin_timeout_returns_internal_error_and_clears_request_id(
     monkeypatch: pytest.MonkeyPatch,
     caplog: pytest.LogCaptureFixture,
 ) -> None:
     caplog.set_level(logging.INFO, logger="minirag")
     settings = _settings(monkeypatch)
 
-    with pytest.raises(TimeoutError, match="^timeout$"):
-        ask(
-            AskRequest(question="你好"),
-            _context(settings, RaisingChatModel()),
-        )
+    response = ask(
+        AskRequest(question="你好"),
+        _context(settings, RaisingChatModel()),
+    )
 
+    assert response.status == "error"
+    assert response.intent is None
+    assert response.error is not None
+    assert response.error.code == "internal_error"
+    assert "timeout" not in response.model_dump_json()
+    assert "Traceback" not in response.model_dump_json()
     records = _service_records(caplog)
     assert records
-    assert len({record.request_id for record in records}) == 1
-    assert records[0].request_id != "-"
+    assert {record.request_id for record in records} == {response.request_id}
     assert request_id_var.get() is None
     assert _API_KEY not in caplog.text
+    assert "Traceback (most recent call last):" in caplog.text
 
 
 def test_filter_stamps_child_logger_and_formatter(

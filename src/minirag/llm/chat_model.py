@@ -1,14 +1,26 @@
 """构造聊天模型，并把单次回复的用量转成契约中的 ``Usage``。
 
-本模块属于领域层。它只依赖配置和问答契约，不导入图或服务入口，也不发起网络请求。
+本模块也负责识别供应商的不可用异常。它不导入图或服务入口，也不发起网络请求。
 """
 
+import openai
 from langchain_core.language_models import BaseChatModel
 from langchain_core.messages import AIMessage
 from langchain_openai import ChatOpenAI
 
 from minirag.config import Settings
 from minirag.contracts import Usage
+from minirag.errors import LLM_UNAVAILABLE_MESSAGE, LLMUnavailableError
+
+# openai 3.13.0 在重试耗尽后抛出这些类型。APITimeoutError 是 APIConnectionError
+# 的子类。langchain-openai 1.6.2 的 OpenAITimeoutError、OpenAIConnectionError、
+# OpenAIRateLimitError、OpenAIAPIError 分别继承它们，因此不用再写一层包装类。
+# 400、401、403、404、408、409、422 以及内置 TimeoutError 不在这里。
+_PROVIDER_UNAVAILABLE = (
+    openai.APIConnectionError,
+    openai.RateLimitError,
+    openai.InternalServerError,
+)
 
 
 def build_chat_model(settings: Settings) -> BaseChatModel:
@@ -65,3 +77,30 @@ def usage_from_ai_message(message: AIMessage, *, model: str) -> Usage | None:
         input_tokens=metadata["input_tokens"],
         output_tokens=metadata["output_tokens"],
     )
+
+
+def raise_provider_failure(exc: BaseException) -> None:
+    """供应商不可用时改抛领域异常，其余异常保持原样。
+
+    超时和连接失败是 ``APIConnectionError``，429 是 ``RateLimitError``，5xx 是
+    ``InternalServerError``。这三类都是 openai SDK 会重试的故障；重试次数用尽后
+    仍然抛出它们。本函数不读取异常字符串，避免把密钥写进新异常。
+
+    已经是 ``LLMUnavailableError`` 时原样再抛，不再包一层，这样原来的
+    ``__cause__`` 还在。
+
+    参数:
+        exc: 模型调用或图执行抛出的异常。
+
+    返回:
+        无。不能归为模型不可用时直接返回，调用方继续处理原来的 ``exc``。
+
+    异常:
+        LLMUnavailableError: ``exc`` 本身就是该类型，或属于上面的供应商故障。
+            新异常用 ``raise LLMUnavailableError(...) from exc`` 抛出，说明文字
+            是固定短句。
+    """
+    if isinstance(exc, LLMUnavailableError):
+        raise exc
+    if isinstance(exc, _PROVIDER_UNAVAILABLE):
+        raise LLMUnavailableError(LLM_UNAVAILABLE_MESSAGE) from exc
